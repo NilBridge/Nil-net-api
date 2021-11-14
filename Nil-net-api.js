@@ -108,4 +108,4 @@ server.listen(cfg.port, '0.0.0.0',()=>{
 });
 
 log('init!');
-log('version 1.0.0');
+log('version 1.0.1');
