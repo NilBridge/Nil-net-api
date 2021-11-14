@@ -1,2 +1,2 @@
-# Nil-http-api
-NilBridge-API-http插件 提供HTTP API供所有语言使用
+# Nil-net-api
+NilBridge-API-net插件 提供网络API供所有语言使用
