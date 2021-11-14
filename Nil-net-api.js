@@ -55,7 +55,7 @@ wsServer.on('request', function (request) {
     connection.on('message', function (message) {
         if (message.type === 'utf8') {
             try {
-                on_pack(message.UTF8Data);
+                on_pack(message.utf8Data);
             } catch (err) {
                 NIL.Logger.warn('net-api', err);
             }
