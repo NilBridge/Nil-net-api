@@ -8,7 +8,7 @@ try {
     fs.statSync(dir + "/config.json");
 } catch {
     fs.mkdirSync(dir);
-    fs.writeFileSync(dir + "/config.json", JSON.stringify({ enable: true, port: 8123, key: "114514",version:"1.0.0" }, null, '\t'));
+    fs.writeFileSync(dir + "/config.json", JSON.stringify({ enable: true, port: 8123, key: "114514", version: "1.0.0" }, null, '\t'));
 }
 
 const cfg = JSON.parse(fs.readFileSync(dir + "/config.json", 'utf8'))
@@ -19,23 +19,76 @@ function log(msg) {
     NIL.Logger.info('net-api', msg);
 }
 
-var server = http.createServer(function (request, response) {
-    log('Received request for ' + request.url);
-    var re = {};
-    switch (request.url) {
-        case "/sendGroupMessage":
-            re = { code: 200 };
+var messages = {};
+
+var server = http.createServer((req, res)=> {
+    log('Received request for ' + req.url);
+    var re = {code:-1};
+    switch (req.method) {
+        case "GET":
+            switch(req.url.split('?')[0]){
+                case "/getGroupList":
+                    eq = NIL.bot.getGroupList();
+                    re.list = [];
+                    eq.forEach(g=>{
+                        re.list.push(g);
+                    })
+                    break;
+                case "/getFriendList":
+                    eq = NIL.bot.getFriendList();
+                    re.list = [];
+                    eq.forEach(g=>{
+                        re.list.push(g);
+                    })
+                    break;
+                case "/getMessages":
+                    re.messages = messages;
+                    break;
+                case "/getMessageById":
+                    try{
+                        ul = parseURL(req.url);
+                        if(ul.id==undefined){
+                            re = {
+                                code : 400,
+                                msg : "cannot find property “id”"
+                            };
+                            break;
+                        }
+                        if(messages[ul.id] == undefined){
+                            re.code = 404;
+                            break;
+                        }
+                        re.message = messages[ul.id];
+                    }catch(err){
+                        re = {code:400,msg:err.toString()}
+                    }
+                    break;
+                case "/clearMessages":
+                    messages = {};
+                    break;
+            }
             break;
-        case "/senFriendMessage":
-            re = { code: 200 };
-            break;
-        default:
-            re = { code: 404 };
+        case "POST":
+            let postData = '';
+            req.on('data', chunk => {
+                postData += chunk;
+            })
+            req.on('end', () => {
+                var dt = JSON.parse(postData);
+                switch(req.url){
+                    case "/sendGroupMessage":
+                        NIL.bot.sendGroupMessage(dt.target,dt.text);
+                        break;
+                    case "/sendFriendMessage":
+                        NIL.bot.sendFriendMessage(dt.target,dt.text);
+                        break;
+                }           
+            });
             break;
     }
-    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-    response.write(JSON.stringify(re));
-    response.end();
+    res.writeHead(200,{  'Content-Type':'application/json;charset=utf-8'});
+    if(re.code == -1) re.code=200;
+    res.end(JSON.stringify(re));
 });
 
 wsServer = new WebSocketServer({
@@ -68,6 +121,20 @@ wsServer.on('request', function (request) {
     });
 });
 
+function parseURL(url){
+    var ul = url.split('?');
+    if(ul.lenght == 1){
+        throw new Error('not a right url:'+url);
+    }
+    var querys = ul[1].split("&");
+    var rt = {};
+    querys.forEach(s=>{
+        var e = s.split("=");
+        rt[e[0]] = e[1];
+    })
+    return rt;
+}
+
 function on_pack(dt) {
     var pack = JSON.parse(dt);
     switch (pack.type) {
@@ -84,28 +151,70 @@ function on_pack(dt) {
 }
 
 function net_on_group(e) {
+    var id = e.message_id;
     var p = {
-        messageChain : e.message,
-        sender :{
-            id:e.sender.user_id,
-            name : e.sender.nickname,
-            xboxid : (NIL.XDB.wl_exsis(e.sender.user_id))?NIL.XDB.get_xboxid(e.sender.user_id):null
+        messageChain: e.message,
+        id,
+        sender: {
+            id: e.sender.user_id,
+            name: e.sender.nickname,
+            xboxid: (NIL.XDB.wl_exsis(e.sender.user_id)) ? NIL.XDB.get_xboxid(e.sender.user_id) : null
         },
-        group:{
-            id:e.group_id,
+        group: {
+            id: e.group_id,
             name: e.group_name
         }
-    }
+    };
+    var ps = JSON.stringify(p);
+    messages[id]=p;
     allsockets.forEach(socket => {
-       socket.sendUTF(JSON.stringify(p));
+        socket.sendUTF(ps);
     });
 }
 
 NIL.FUNC.PLUGINS.GROUP.push(net_on_group);
 
-server.listen(cfg.port, '0.0.0.0',()=>{
-    log('API listening on '+cfg.port);
+server.listen(cfg.port, '0.0.0.0', () => {
+    log('API listening on ' + cfg.port);
 });
 
 log('init!');
-log('version 1.0.1');
+log('version 1.0.4');
+
+/*
+{
+    "post_type": "message",
+    "message_id": "MDTy4LBlZSUAACcF84zy0GGQmCwB",
+    "user_id": 2959435045,
+    "time": 1636866092,
+    "seq": 9989,
+    "rand": 4086100688,
+    "font": "微软雅黑",
+    "message": [
+        { "type": "text", "text": "测试" }
+    ],
+    "raw_message": "测试",
+    "message_type": "group",
+    "sender": {
+        "user_id": 2959435045,
+        "nickname": "DreamLition",
+        "card": "DreamLition",
+        "sex": "male",
+        "age": 17,
+        "area": "",
+        "level": 1,
+        "role": "admin",
+        "title": ""
+    },
+    "group_id": 808776416,
+    "group_name": "NilBridge | 公测++",
+    "block": false,
+    "sub_type": "normal",
+    "anonymous": null,
+    "atme": false,
+    "atall": false,
+    "group": {},
+    "member": {},
+    "self_id": 2837945976
+}
+*/
