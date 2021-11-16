@@ -174,12 +174,26 @@ function net_on_group(e) {
 
 NIL.FUNC.PLUGINS.GROUP.push(net_on_group);
 
-server.listen(cfg.port, '0.0.0.0', () => {
-    log('API listening on ' + cfg.port);
-});
+
 
 log('init!');
-log('version 1.0.4');
+log('version 1.0.5');
+
+function onStart(){
+    server.listen(cfg.port, '0.0.0.0', () => {
+        log('API listening on ' + cfg.port);
+    });
+}
+
+function onStop(){
+    server.close();
+    log('HTTP服务器已关闭');
+}
+
+module.exports = {
+    onStart,
+    onStop
+};
 
 /*
 {
