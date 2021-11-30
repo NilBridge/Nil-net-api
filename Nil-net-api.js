@@ -158,7 +158,7 @@ function net_on_group(e) {
         sender: {
             id: e.sender.user_id,
             name: e.sender.nickname,
-            xboxid: (NIL.XDB.wl_exsis(e.sender.user_id)) ? NIL.XDB.get_xboxid(e.sender.user_id) : null
+            xboxid: (NIL.XDB.wl_exsits(e.sender.user_id)) ? NIL.XDB.get_xboxid(e.sender.user_id) : null
         },
         group: {
             id: e.group_id,
