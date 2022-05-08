@@ -1,0 +1,23 @@
+{
+  "name": "nil-net-api",
+  "version": "1.0.0",
+  "description": "an HTTP API for Nilbridge",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NilBridge/Nil-net-api.git"
+  },
+  "keywords": [
+    "nil-net-api"
+  ],
+  "author": "Lition",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NilBridge/Nil-net-api/issues"
+  },
+  "homepage": "https://github.com/NilBridge/Nil-net-api#readme",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "express": "^4.18.1"
+  }
+}
